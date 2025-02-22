@@ -17,13 +17,17 @@ class Paper {
   offsetX = 0;
   offsetY = 0;
   tapStartTime = 0;
+  isDragging = false;
 
   init(paper) {
+    paper.style.transition = "transform 0.3s ease-out"; // Smooth slide animation
+
     const startMove = (e, isTouch = false) => {
       const clientX = isTouch ? e.touches[0].clientX : e.clientX;
       const clientY = isTouch ? e.touches[0].clientY : e.clientY;
 
       this.tapStartTime = Date.now(); // Store tap start time
+      this.isDragging = false;
 
       if (this.holdingPaper) return;
       this.holdingPaper = true;
@@ -53,6 +57,12 @@ class Paper {
         this.currentPaperY = this.mouseY - this.offsetY;
       }
 
+      // If movement is detected, enable smooth sliding
+      if (Math.hypot(this.mouseX - this.mouseTouchX, this.mouseY - this.mouseTouchY) > 5) {
+        this.isDragging = true;
+        paper.style.transition = "transform 0.1s ease-out"; // Faster transition for sliding
+      }
+
       paper.style.transform = `translate(${this.currentPaperX}px, ${this.currentPaperY}px) rotate(${this.rotation}deg)`;
     };
 
@@ -60,12 +70,16 @@ class Paper {
       this.holdingPaper = false;
       this.rotating = false;
 
-      // Check if it was a short tap (tap duration < 200ms) and little movement
       const tapDuration = Date.now() - this.tapStartTime;
       const movedDistance = Math.hypot(this.mouseX - this.mouseTouchX, this.mouseY - this.mouseTouchY);
 
       if (tapDuration < 200 && movedDistance < 5) {
-        paper.remove(); // Remove paper on tap
+        // If tapped, fade out and remove
+        paper.style.transition = "transform 0.3s ease-in-out, opacity 0.3s ease-in-out";
+        paper.style.transform += " scale(0.8)";
+        paper.style.opacity = "0";
+
+        setTimeout(() => paper.remove(), 300);
       }
     };
 
@@ -78,50 +92,6 @@ class Paper {
     paper.addEventListener("touchstart", (e) => startMove(e, true), { passive: false });
     document.addEventListener("touchmove", (e) => move(e, true), { passive: false });
     window.addEventListener("touchend", (e) => stopMove(e, true));
-  }
-}
-
-const papers = document.querySelectorAll(".paper");
-
-papers.forEach((paper) => {
-  const p = new Paper();
-  p.init(paper);
-});
-      this.offsetX = this.mouseTouchX - rect.left;
-      this.offsetY = this.mouseTouchY - rect.top;
-    };
-
-    const move = (e, isTouch = false) => {
-      if (!this.holdingPaper) return;
-
-      const clientX = isTouch ? e.touches[0].clientX : e.clientX;
-      const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-
-      this.mouseX = clientX;
-      this.mouseY = clientY;
-
-      if (!this.rotating) {
-        this.currentPaperX = this.mouseX - this.offsetX;
-        this.currentPaperY = this.mouseY - this.offsetY;
-      }
-
-      paper.style.transform = `translate(${this.currentPaperX}px, ${this.currentPaperY}px) rotate(${this.rotation}deg)`;
-    };
-
-    const stopMove = () => {
-      this.holdingPaper = false;
-      this.rotating = false;
-    };
-
-    // Mouse Events
-    paper.addEventListener("mousedown", (e) => startMove(e, false));
-    document.addEventListener("mousemove", (e) => move(e, false));
-    window.addEventListener("mouseup", stopMove);
-
-    // Touch Events for Mobile
-    paper.addEventListener("touchstart", (e) => startMove(e, true), { passive: false });
-    document.addEventListener("touchmove", (e) => move(e, true), { passive: false });
-    window.addEventListener("touchend", stopMove);
   }
 }
 
